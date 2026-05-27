@@ -20,7 +20,7 @@ export default function VideoAI() {
     const formData = new FormData()
     formData.append('file', video)
     try {
-      const res = await axios.post(`${API_URL}/upload`, formData)
+      const res = await axios.post(`${API_URL}/api/upload`, formData)
       setVideoId(res.data.video_id)
       await processVideo(res.data.video_id)
     } catch (err: any) {
@@ -32,7 +32,7 @@ export default function VideoAI() {
   const processVideo = async (id: string) => {
     setProcessing(true)
     try {
-      const res = await axios.post(`${API_URL}/process/${id}`)
+      const res = await axios.post(`${API_URL}/api/process/${id}`)
       setData(res.data)
     } catch (err: any) {
       alert(err.response?.data?.detail || err.message)
@@ -43,7 +43,7 @@ export default function VideoAI() {
   const askQuestion = async () => {
     if (!question.trim() || !videoId) return
     try {
-      const res = await axios.post(`${API_URL}/ask`, { video_id: videoId, question })
+      const res = await axios.post(`${API_URL}/api/ask`, { video_id: videoId, question })
       setQaResult(res.data.answer)
     } catch (err: any) {
       alert(err.response?.data?.detail || err.message)
