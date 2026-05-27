@@ -1,6 +1,4 @@
-import sys, os, json
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -11,24 +9,23 @@ class GenerateRequest(BaseModel):
     prompt: str
     model_type: str = "sft"
 
+@app.get("/")
+@app.get("/api")
+@app.get("/api/")
+def root():
+    return {"service": "Alignment Lab", "version": "1.0.0", "endpoints": ["/api/health", "/api/generate (POST)", "/api/train (POST)"], "note": "Full GPU training runs on Railway"}
+
 @app.get("/health")
+@app.get("/api/health")
 def health():
     return {"status": "ok", "service": "alignment-lab"}
 
-@app.get("/api/health")
-def api_health():
-    return {"status": "ok", "service": "alignment-lab"}
-
-@app.get("/api")
-def root():
-    return {"service": "Alignment Lab", "version": "1.0.0", "note": "Full GPU training runs on Railway/AWS. API scaffold for Vercel deployment."}
-
 @app.post("/api/generate")
 def generate(req: GenerateRequest):
-    return {"prompt": req.prompt, "response": f"[Alignment Lab] To train and run models, deploy the full backend on Railway with GPU support. This Vercel deployment provides the API scaffold."}
+    return {"prompt": req.prompt, "response": "[Alignment Lab] Deploy on Railway with GPU: railway up --service alignment-lab"}
 
 @app.post("/api/train")
 def train():
-    return {"status": "ok", "message": "Training requires GPU. Deploy on Railway with: railway up --service alignment-lab"}
+    return {"status": "ok", "message": "Training requires GPU. Deploy on Railway."}
 
 handler = app

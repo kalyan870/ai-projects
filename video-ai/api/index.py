@@ -10,25 +10,27 @@ class QuestionRequest(BaseModel):
     video_id: str = ""
     question: str = ""
 
+@app.get("/")
+@app.get("/api")
+@app.get("/api/")
+def root():
+    return {"service": "Video AI", "version": "1.0.0", "endpoints": ["/api/health", "/api/upload (POST)", "/api/process/{video_id} (POST)", "/api/ask (POST)"]}
+
 @app.get("/health")
 @app.get("/api/health")
 def health():
     return {"status": "ok", "service": "video-ai"}
 
-@app.get("/api")
-def root():
-    return {"service": "Video AI", "version": "1.0.0"}
-
 @app.post("/api/upload")
 def upload():
-    return {"video_id": str(uuid.uuid4()), "filename": "sample.mp4", "note": "Processing requires FFmpeg + Whisper. Deploy full backend on Railway."}
+    return {"video_id": str(uuid.uuid4()), "filename": "sample.mp4", "note": "Full FFmpeg + Whisper processing runs on Railway"}
 
 @app.post("/api/process/{video_id}")
 def process(video_id: str):
-    return {"video_id": video_id, "status": "processing_requires_railway", "full_backend_command": "railway up --service video-ai-api"}
+    return {"video_id": video_id, "status": "processing_requires_railway"}
 
 @app.post("/api/ask")
 def ask(req: QuestionRequest):
-    return {"answer": "Full Video QA with Whisper + LanceDB runs on Railway. This is the Vercel API scaffold.", "sources": []}
+    return {"answer": "Full Video QA with Whisper + LanceDB runs on Railway.", "sources": []}
 
 handler = app
