@@ -1,10 +1,12 @@
+import os, json, time, hmac, hashlib, base64, uuid
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import uuid
 
 app = FastAPI(title="Video AI API", version="1.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+
+STORE_ID = "wiPO3SuGPCYYU9fI"
 
 class QuestionRequest(BaseModel):
     video_id: str = ""
@@ -14,16 +16,35 @@ class UploadRequest(BaseModel):
     url: str = ""
     filename: str = "video.mp4"
 
+class UploadUrlRequest(BaseModel):
+    filename: str = "video.mp4"
+    contentType: str = "video/mp4"
+
+def generate_client_token(pathname: str, access: str = "public", valid_until_ms: int = None) -> str:
+    rw_token = os.environ.get("BLOB_READ_WRITE_TOKEN", "")
+    payload = json.dumps({"pathname": pathname, "access": access, "validUntil": valid_until_ms or int(time.time() * 1000) + 600000}, separators=(",", ":"))
+    payload_b64 = base64.b64encode(payload.encode()).decode()
+    signature = hmac.new(rw_token.encode(), payload_b64.encode(), hashlib.sha256).hexdigest()
+    combined = (signature + "." + payload_b64).encode()
+    return f"vercel_blob_client_{STORE_ID}_{base64.b64encode(combined).decode()}"
+
 @app.get("/")
 @app.get("/api")
 @app.get("/api/")
 def root():
-    return {"service": "Video AI", "version": "1.0.0", "endpoints": ["/api/health", "/api/upload (POST)", "/api/process/{video_id} (POST)", "/api/ask (POST)"]}
+    return {"service": "Video AI", "version": "1.0.0", "endpoints": ["/api/health", "/api/upload-url (POST)", "/api/upload (POST)", "/api/process/{video_id} (POST)", "/api/ask (POST)"]}
 
 @app.get("/health")
 @app.get("/api/health")
 def health():
     return {"status": "ok", "service": "video-ai"}
+
+@app.post("/api/upload-url")
+def upload_url(req: UploadUrlRequest):
+    safe_name = "".join(c if c.isalnum() or c in "._-" else "_" for c in req.filename)
+    pathname = f"videos/{int(time.time()*1000)}-{safe_name}"
+    client_token = generate_client_token(pathname, "public")
+    return {"clientToken": client_token, "pathname": pathname}
 
 @app.post("/api/upload")
 def upload(req: UploadRequest):

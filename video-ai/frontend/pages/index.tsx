@@ -2,7 +2,28 @@ import { useState, useRef } from 'react'
 import axios from 'axios'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8002'
-const MAX_SIZE = 4 * 1024 * 1024
+
+const uploadFileToBlob = async (file: File): Promise<string> => {
+  const { clientToken, pathname } = (await axios.post(`${API_URL}/api/upload-url`, { filename: file.name, contentType: file.type })).data
+  const storeId = 'store_wiPO3SuGPCYYU9fI'
+  const requestId = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+  const res = await fetch(`https://vercel.com/api/blob/?pathname=${encodeURIComponent(pathname)}`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${clientToken}`,
+      'x-vercel-blob-access': 'public',
+      'content-type': file.type,
+      'x-api-version': '12',
+      'x-vercel-blob-store-id': storeId,
+      'x-api-blob-request-id': requestId,
+      'x-api-blob-request-attempt': '0'
+    },
+    body: file
+  })
+  if (!res.ok) throw new Error(`Upload failed: ${res.status}`)
+  const blob = await res.json()
+  return blob.url
+}
 
 export default function VideoAI() {
   const [video, setVideo] = useState<File | null>(null)
@@ -22,12 +43,7 @@ export default function VideoAI() {
     try {
       let url = videoUrl
       if (inputMode === 'file' && video) {
-        if (video.size > MAX_SIZE) {
-          alert('Vercel serverless limit is 4MB. Paste a video URL instead, or deploy the full backend on Railway.')
-          setLoading(false)
-          return
-        }
-        url = URL.createObjectURL(video)
+        url = await uploadFileToBlob(video)
       }
       if (!url) { setLoading(false); return }
       const res = await axios.post(`${API_URL}/api/upload`, { url, filename: video?.name || url.split('/').pop() })
@@ -96,28 +112,27 @@ export default function VideoAI() {
                     placeholder="https://www.youtube.com/watch?v=..."
                     className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-500" />
                 </div>
-                <p className="text-xs text-gray-500 text-center">Vercel has a 4MB upload limit — use URL mode for large videos</p>
+                <p className="text-xs text-gray-500 text-center">Or paste a YouTube/direct video link for processing</p>
               </div>
             ) : (
               <div>
                 <div className="border-2 border-dashed border-white/20 rounded-xl p-12 text-center"
                   onDragOver={e => e.preventDefault()}
-                  onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f.size > MAX_SIZE) { alert('File too large. Vercel limit is 4MB. Use URL mode.'); return }; setVideo(f) }}>
+                  onDrop={e => { e.preventDefault(); setVideo(e.dataTransfer.files[0]) }}>
                   {video ? (
                     <div>
                       <p className="text-lg font-medium text-purple-300">{video.name}</p>
                       <p className="text-sm text-gray-400">{(video.size / 1024 / 1024).toFixed(1)} MB</p>
-                      {video.size > MAX_SIZE && <p className="text-xs text-red-400 mt-1">Exceeds 4MB — will fail on Vercel. Use URL mode.</p>}
                     </div>
                   ) : (
                     <div>
                       <p className="text-4xl mb-4">&#127916;</p>
                       <p className="text-gray-300">Drop video here or click to browse</p>
-                      <p className="text-sm text-gray-500 mt-2">Max 4MB (Vercel limit). Use URL mode for larger files.</p>
+                      <p className="text-sm text-gray-500 mt-2">Uploads directly to Vercel Blob (up to 10GB)</p>
                     </div>
                   )}
                   <input ref={fileRef} type="file" accept=".mp4,.mov,.mkv,.avi" className="hidden"
-                    onChange={e => { const f = e.target.files?.[0]; if (f && f.size > MAX_SIZE) { alert('File too large. Vercel limit is 4MB. Use URL mode.'); return }; setVideo(f || null) }} />
+                    onChange={e => setVideo(e.target.files?.[0] || null)} />
                 </div>
                 <div className="flex gap-3 mt-4">
                   <button onClick={() => fileRef.current?.click()} className="flex-1 px-4 py-3 bg-white/10 rounded-xl hover:bg-white/20">
