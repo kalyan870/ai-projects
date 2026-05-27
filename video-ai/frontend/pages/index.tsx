@@ -35,6 +35,7 @@ export default function VideoAI() {
   const [data, setData] = useState<any>(null)
   const [question, setQuestion] = useState('')
   const [qaResult, setQaResult] = useState('')
+  const [qaSources, setQaSources] = useState<any[]>([])
   const [activeTab, setActiveTab] = useState<'summary' | 'chapters' | 'moments' | 'qa'>('summary')
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -71,13 +72,15 @@ export default function VideoAI() {
     try {
       const res = await axios.post(`${API_URL}/api/ask`, { video_id: videoId, question })
       setQaResult(res.data.answer)
+      setQaSources((res.data.sources || []).slice(0, 3))
     } catch (err: any) {
       alert(err.response?.data?.detail || err.message)
     }
   }
 
-  const formatTime = (s: number) => {
-    const m = Math.floor(s / 60); const sec = Math.floor(s % 60)
+  const formatTime = (s: any) => {
+    if (s === undefined || s === null || isNaN(Number(s))) return '0:00'
+    const m = Math.floor(Number(s) / 60); const sec = Math.floor(Number(s) % 60)
     return `${m}:${sec.toString().padStart(2, '0')}`
   }
 
@@ -199,6 +202,17 @@ export default function VideoAI() {
                   </div>
                   {qaResult && (
                     <div className="p-4 bg-white/5 rounded-xl text-gray-200 leading-relaxed">{qaResult}</div>
+                  )}
+                  {qaSources.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Sources</p>
+                      {qaSources.map((s: any, i: number) => (
+                        <div key={i} className="flex items-start gap-3 p-2 bg-white/[0.03] rounded-lg">
+                          <span className="text-purple-400 font-mono text-xs whitespace-nowrap mt-0.5">[{formatTime(s.time)}]</span>
+                          <span className="text-gray-400 text-sm">{s.text}</span>
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
               )}
