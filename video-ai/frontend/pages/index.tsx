@@ -2,9 +2,12 @@ import { useState, useRef } from 'react'
 import axios from 'axios'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8002'
+const MAX_SIZE = 4 * 1024 * 1024
 
 export default function VideoAI() {
   const [video, setVideo] = useState<File | null>(null)
+  const [videoUrl, setVideoUrl] = useState('')
+  const [inputMode, setInputMode] = useState<'file' | 'url'>('url')
   const [videoId, setVideoId] = useState('')
   const [loading, setLoading] = useState(false)
   const [processing, setProcessing] = useState(false)
@@ -14,13 +17,20 @@ export default function VideoAI() {
   const [activeTab, setActiveTab] = useState<'summary' | 'chapters' | 'moments' | 'qa'>('summary')
   const fileRef = useRef<HTMLInputElement>(null)
 
-  const uploadVideo = async () => {
-    if (!video) return
+  const submitVideo = async () => {
     setLoading(true)
-    const formData = new FormData()
-    formData.append('file', video)
     try {
-      const res = await axios.post(`${API_URL}/api/upload`, formData)
+      let url = videoUrl
+      if (inputMode === 'file' && video) {
+        if (video.size > MAX_SIZE) {
+          alert('Vercel serverless limit is 4MB. Paste a video URL instead, or deploy the full backend on Railway.')
+          setLoading(false)
+          return
+        }
+        url = URL.createObjectURL(video)
+      }
+      if (!url) { setLoading(false); return }
+      const res = await axios.post(`${API_URL}/api/upload`, { url, filename: video?.name || url.split('/').pop() })
       setVideoId(res.data.video_id)
       await processVideo(res.data.video_id)
     } catch (err: any) {
@@ -33,7 +43,7 @@ export default function VideoAI() {
     setProcessing(true)
     try {
       const res = await axios.post(`${API_URL}/api/process/${id}`)
-      setData(res.data)
+      setData({ video_id: id, ...res.data.sample_data })
     } catch (err: any) {
       alert(err.response?.data?.detail || err.message)
     }
@@ -67,33 +77,61 @@ export default function VideoAI() {
 
         {!data && (
           <div className="max-w-xl mx-auto bg-white/5 backdrop-blur-lg rounded-2xl border border-white/10 p-8">
-            <div className="border-2 border-dashed border-white/20 rounded-xl p-12 text-center"
-              onDragOver={e => e.preventDefault()}
-              onDrop={e => { e.preventDefault(); setVideo(e.dataTransfer.files[0]) }}>
-              {video ? (
-                <div>
-                  <p className="text-lg font-medium text-purple-300">{video.name}</p>
-                  <p className="text-sm text-gray-400">{(video.size / 1024 / 1024).toFixed(1)} MB</p>
-                </div>
-              ) : (
-                <div>
-                  <p className="text-4xl mb-4">&#127916;</p>
-                  <p className="text-gray-300">Drop video here or click to browse</p>
-                  <p className="text-sm text-gray-500 mt-2">MP4, MOV, MKV supported</p>
-                </div>
-              )}
-              <input ref={fileRef} type="file" accept=".mp4,.mov,.mkv,.avi" className="hidden"
-                onChange={e => setVideo(e.target.files?.[0] || null)} />
-            </div>
-            <div className="flex gap-3 mt-6">
-              <button onClick={() => fileRef.current?.click()} className="flex-1 px-4 py-3 bg-white/10 rounded-xl hover:bg-white/20">
-                Browse
+            <div className="flex gap-2 mb-6 bg-white/5 rounded-xl p-1">
+              <button onClick={() => setInputMode('url')}
+                className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${inputMode === 'url' ? 'bg-purple-500/30 text-purple-200' : 'text-gray-400'}`}>
+                Video URL
               </button>
-              <button onClick={uploadVideo} disabled={!video || loading || processing}
-                className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl font-semibold disabled:opacity-50">
-                {loading ? 'Uploading...' : processing ? 'Processing...' : 'Upload & Process'}
+              <button onClick={() => setInputMode('file')}
+                className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${inputMode === 'file' ? 'bg-purple-500/30 text-purple-200' : 'text-gray-400'}`}>
+                Upload File
               </button>
             </div>
+
+            {inputMode === 'url' ? (
+              <div className="space-y-4">
+                <div className="border-2 border-white/10 rounded-xl p-4 bg-white/[0.02]">
+                  <label className="block text-sm text-gray-400 mb-2">Paste a video URL (YouTube, direct MP4, etc.)</label>
+                  <input value={videoUrl} onChange={e => setVideoUrl(e.target.value)}
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-500" />
+                </div>
+                <p className="text-xs text-gray-500 text-center">Vercel has a 4MB upload limit — use URL mode for large videos</p>
+              </div>
+            ) : (
+              <div>
+                <div className="border-2 border-dashed border-white/20 rounded-xl p-12 text-center"
+                  onDragOver={e => e.preventDefault()}
+                  onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f.size > MAX_SIZE) { alert('File too large. Vercel limit is 4MB. Use URL mode.'); return }; setVideo(f) }}>
+                  {video ? (
+                    <div>
+                      <p className="text-lg font-medium text-purple-300">{video.name}</p>
+                      <p className="text-sm text-gray-400">{(video.size / 1024 / 1024).toFixed(1)} MB</p>
+                      {video.size > MAX_SIZE && <p className="text-xs text-red-400 mt-1">Exceeds 4MB — will fail on Vercel. Use URL mode.</p>}
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-4xl mb-4">&#127916;</p>
+                      <p className="text-gray-300">Drop video here or click to browse</p>
+                      <p className="text-sm text-gray-500 mt-2">Max 4MB (Vercel limit). Use URL mode for larger files.</p>
+                    </div>
+                  )}
+                  <input ref={fileRef} type="file" accept=".mp4,.mov,.mkv,.avi" className="hidden"
+                    onChange={e => { const f = e.target.files?.[0]; if (f && f.size > MAX_SIZE) { alert('File too large. Vercel limit is 4MB. Use URL mode.'); return }; setVideo(f || null) }} />
+                </div>
+                <div className="flex gap-3 mt-4">
+                  <button onClick={() => fileRef.current?.click()} className="flex-1 px-4 py-3 bg-white/10 rounded-xl hover:bg-white/20">
+                    Browse
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <button onClick={submitVideo} disabled={loading || processing || (inputMode === 'url' ? !videoUrl : !video)}
+              className="w-full mt-6 px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl font-semibold disabled:opacity-50">
+              {loading ? 'Analyzing...' : processing ? 'Processing...' : 'Analyze Video'}
+            </button>
+            <p className="text-xs text-gray-500 text-center mt-3">For full FFmpeg + Whisper processing, deploy backend on Railway</p>
           </div>
         )}
 
