@@ -1,10 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
 import axios from 'axios'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8002'
-
 const uploadFileToBlob = async (file: File): Promise<string> => {
-  const { clientToken, pathname } = (await axios.post(`${API_URL}/api/upload-url`, { filename: file.name, contentType: file.type })).data
+  const { clientToken, pathname } = (await axios.post(`/api/upload-url`, { filename: file.name, contentType: file.type })).data
   const storeId = 'store_wiPO3SuGPCYYU9fI'
   const requestId = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
   const res = await fetch(`https://vercel.com/api/blob/?pathname=${encodeURIComponent(pathname)}`, {
@@ -59,7 +57,7 @@ export default function VideoAI() {
         url = await uploadFileToBlob(video)
       }
       if (!url) { setLoading(false); return }
-      const res = await axios.post(`${API_URL}/api/upload`, { url, filename: video?.name || url.split('/').pop() })
+      const res = await axios.post(`/api/upload`, { url, filename: video?.name || url.split('/').pop() })
       setVideoId(res.data.video_id)
       setProcessing(true)
       await processVideo(res.data.video_id)
@@ -72,7 +70,7 @@ export default function VideoAI() {
 
   const processVideo = async (id: string) => {
     try {
-      const res = await axios.post(`${API_URL}/api/process/${id}`)
+      const res = await axios.post(`/api/process/${id}`)
       setData({ video_id: id, ...res.data.sample_data })
     } catch (err: any) {
       alert(err.response?.data?.detail || err.message)
@@ -82,7 +80,7 @@ export default function VideoAI() {
   const askQuestion = async () => {
     if (!question.trim() || !videoId) return
     try {
-      const res = await axios.post(`${API_URL}/api/ask`, { video_id: videoId, question })
+      const res = await axios.post(`/api/ask`, { video_id: videoId, question })
       setQaResult(res.data.answer)
       setQaSources((res.data.sources || []).slice(0, 3))
     } catch (err: any) {
