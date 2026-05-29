@@ -3,15 +3,14 @@ import axios from 'axios'
 
 const uploadFileToBlob = async (file: File): Promise<string> => {
   const { clientToken, pathname } = (await axios.post('/api/upload-url', { filename: file.name, contentType: file.type })).data
-  const storeId = 'store_wiPO3SuGPCYYU9fI'
   const res = await fetch(`https://vercel.com/api/blob/put/${encodeURIComponent(pathname)}`, {
     method: 'PUT',
     headers: {
-      'Authorization': `Bearer ${clientToken}`,
+      Authorization: `Bearer ${clientToken}`,
       'x-vercel-blob-access': 'public',
       'content-type': file.type,
     },
-    body: file
+    body: file,
   })
   if (!res.ok) throw new Error(`Upload failed: ${res.status}`)
   const blob = await res.json()
@@ -30,12 +29,49 @@ const PROCESS_STEPS = [
 
 const formatTime = (s: any) => {
   if (s === undefined || s === null || isNaN(Number(s))) return '0:00'
-  const m = Math.floor(Number(s) / 60); const sec = Math.floor(Number(s) % 60)
+  const m = Math.floor(Number(s) / 60)
+  const sec = Math.floor(Number(s) % 60)
   return `${m}:${sec.toString().padStart(2, '0')}`
 }
 
 type Tab = 'summary' | 'chapters' | 'moments' | 'transcript' | 'qa'
 type ToastType = 'error' | 'success' | 'info'
+
+function extractYouTubeId(url: string): string | null {
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/|youtube\.com\/shorts\/)([\w-]{11})/,
+    /^([\w-]{11})$/,
+  ]
+  for (const p of patterns) {
+    const m = url.match(p)
+    if (m?.[1]) return m[1]
+  }
+  return null
+}
+
+function convertToDirectUrl(url: string): string {
+  // Google Drive
+  const gdMatch = url.match(/drive\.google\.com\/file\/d\/([^/]+)/)
+  if (gdMatch) return `https://drive.google.com/uc?export=download&id=${gdMatch[1]}`
+  // Dropbox
+  if (url.includes('dropbox.com') && !url.includes('?dl=1')) return url + (url.includes('?') ? '&dl=1' : '?dl=1')
+  return url
+}
+
+function isPlayableVideoUrl(url: string): boolean {
+  try {
+    const u = new URL(url)
+    const videoExts = ['.mp4', '.webm', '.mov', '.mkv', '.avi', '.m4v']
+    return videoExts.some(e => u.pathname.toLowerCase().endsWith(e)) ||
+      u.hostname.includes('drive.google.com') ||
+      u.hostname.includes('dropbox.com') ||
+      u.hostname.includes('storage.googleapis.com') ||
+      u.hostname.includes('cloudinary.com') ||
+      u.hostname.includes('blob.vercel-storage.com')
+  } catch {
+    return false
+  }
+}
 
 export default function VideoAI() {
   const [video, setVideo] = useState<File | null>(null)
@@ -54,8 +90,9 @@ export default function VideoAI() {
   const [toast, setToast] = useState<{ type: ToastType; message: string } | null>(null)
   const [transcriptSearch, setTranscriptSearch] = useState('')
   const [currentTime, setCurrentTime] = useState(0)
-  const [videoPlayUrl, setVideoPlayUrl] = useState('')
+  const [videoPlayUrl, setVideoPlayUrl] = useState<string | null>(null)
   const [videoReady, setVideoReady] = useState(false)
+  const [videoError, setVideoError] = useState<string | null>(null)
   const [thumbDataUrl, setThumbDataUrl] = useState<string | null>(null)
   const playerRef = useRef<HTMLVideoElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -63,7 +100,7 @@ export default function VideoAI() {
 
   const showToast = useCallback((type: ToastType, message: string) => {
     setToast({ type, message })
-    setTimeout(() => setToast(null), 4000)
+    setTimeout(() => setToast(null), 4500)
   }, [])
 
   useEffect(() => {
@@ -75,52 +112,66 @@ export default function VideoAI() {
   }, [processing, progressStep])
 
   const captureThumbnail = useCallback((url: string) => {
-    const video = document.createElement('video')
-    video.crossOrigin = 'anonymous'
-    video.src = url
-    video.muted = true
-    video.currentTime = 1
-    video.onloadeddata = () => {
-      const canvas = document.createElement('canvas')
-      canvas.width = video.videoWidth || 640
-      canvas.height = video.videoHeight || 360
-      canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height)
-      setThumbDataUrl(canvas.toDataURL('image/jpeg', 0.7))
-      video.remove()
+    const el = document.createElement('video')
+    el.crossOrigin = 'anonymous'
+    el.src = url
+    el.muted = true
+    el.currentTime = 1
+    el.onloadeddata = () => {
+      const c = document.createElement('canvas')
+      c.width = el.videoWidth || 640
+      c.height = el.videoHeight || 360
+      c.getContext('2d')?.drawImage(el, 0, 0, c.width, c.height)
+      setThumbDataUrl(c.toDataURL('image/jpeg', 0.7))
+      el.remove()
     }
-    video.onerror = () => { setThumbDataUrl(null); video.remove() }
+    el.onerror = () => { setThumbDataUrl(null); el.remove() }
   }, [])
 
   const submitVideo = async () => {
-    setLoading(true); setProgressStep(0); setThumbDataUrl(null); setVideoReady(false)
+    setLoading(true)
+    setProgressStep(0)
+    setThumbDataUrl(null)
+    setVideoReady(false)
+    setVideoError(null)
     try {
       let url = videoUrl
       if (inputMode === 'file' && video) url = await uploadFileToBlob(video)
       if (!url) { setLoading(false); return }
-      const res = await axios.post('/api/upload', { url, filename: video?.name || url.split('/').pop() })
-      setVideoId(res.data.video_id); setVideoPlayUrl(url)
-      if (url && !url.includes('youtube.com') && !url.includes('youtu.be')) captureThumbnail(url)
-      playerRef.current?.load()
+      const directUrl = convertToDirectUrl(url)
+      const res = await axios.post('/api/upload', { url: directUrl, filename: video?.name || url.split('/').pop() })
+      setVideoId(res.data.video_id)
+      setVideoPlayUrl(directUrl)
+      if (!extractYouTubeId(directUrl)) {
+        captureThumbnail(directUrl)
+        if (playerRef.current) { playerRef.current.src = directUrl; playerRef.current.load() }
+      }
       setProcessing(true)
       const proc = await axios.post(`/api/process/${res.data.video_id}`)
-      setData(proc.data.sample_data); setProcessing(false)
+      setData(proc.data.sample_data)
+      setProcessing(false)
     } catch (err: any) {
       const msg = err.response?.data?.detail || err.response?.data?.error || err.message || 'Something went wrong'
       showToast('error', msg)
     }
-    setLoading(false); setProcessing(false)
+    setLoading(false)
+    setProcessing(false)
   }
 
   const askQuestion = async () => {
     if (!question.trim() || !videoId) return
     try {
       const res = await axios.post('/api/ask', { video_id: videoId, question })
-      setQaResult(res.data.answer); setQaSources((res.data.sources || []).slice(0, 3))
+      setQaResult(res.data.answer)
+      setQaSources((res.data.sources || []).slice(0, 3))
     } catch (err: any) { showToast('error', err.response?.data?.error || err.message) }
   }
 
   const seekTo = (time: number) => {
-    if (playerRef.current) { playerRef.current.currentTime = time; playerRef.current.play() }
+    if (playerRef.current && !videoError) {
+      playerRef.current.currentTime = time
+      playerRef.current.play().catch(() => {})
+    }
   }
 
   const filteredTranscript = useMemo(() => {
@@ -132,19 +183,19 @@ export default function VideoAI() {
 
   const downloadAs = useCallback((format: 'json' | 'md') => {
     if (!data) return
-    const filename = `transcript-${videoId || 'video'}.${format}`
-    let content = ''
+    const fn = `transcript-${videoId || 'video'}.${format}`
+    let c = ''
     if (format === 'json') {
-      content = JSON.stringify({ video_id: videoId, duration: data.duration, chapters: data.chapters, transcript: data.transcript, summary: data.summary, tech_insights: data.tech_insights }, null, 2)
+      c = JSON.stringify({ video_id: videoId, duration: data.duration, chapters: data.chapters, transcript: data.transcript, summary: data.summary, tech_insights: data.tech_insights }, null, 2)
     } else {
-      content = `# Video Transcript\n\n**Duration:** ${formatTime(data.duration)}\n\n## Summary\n${data.summary}\n\n## Chapters\n`
-      data.chapters?.forEach((ch: any, i: number) => { content += `### ${i+1}. ${ch.title} (${formatTime(ch.start)} - ${formatTime(ch.end)})\n\n` })
-      content += `## Transcript\n`
-      data.transcript?.forEach((s: any) => { content += `**[${formatTime(s.time)}]** ${s.speaker}: ${s.text}\n\n` })
+      c = `# Video Transcript\n\n**Duration:** ${formatTime(data.duration)}\n\n## Summary\n${data.summary}\n\n## Chapters\n`
+      data.chapters?.forEach((ch: any, i: number) => { c += `### ${i+1}. ${ch.title} (${formatTime(ch.start)} - ${formatTime(ch.end)})\n\n` })
+      c += `## Transcript\n`
+      data.transcript?.forEach((s: any) => { c += `**[${formatTime(s.time)}]** ${s.speaker}: ${s.text}\n\n` })
     }
-    const blob = new Blob([content], { type: format === 'json' ? 'application/json' : 'text/markdown' })
+    const blob = new Blob([c], { type: format === 'json' ? 'application/json' : 'text/markdown' })
     const a = document.createElement('a')
-    a.href = URL.createObjectURL(blob); a.download = filename; a.click(); URL.revokeObjectURL(a.href)
+    a.href = URL.createObjectURL(blob); a.download = fn; a.click(); URL.revokeObjectURL(a.href)
   }, [data, videoId])
 
   const isValidUrl = (url: string) => { try { return ['http:', 'https:'].includes(new URL(url).protocol) } catch { return false } }
@@ -165,8 +216,9 @@ export default function VideoAI() {
   }, [data, searchMatches])
 
   const progressPct = PROCESS_STEPS[Math.min(progressStep, PROCESS_STEPS.length - 1)].pct
-  const isYouTube = videoPlayUrl && (videoPlayUrl.includes('youtube.com') || videoPlayUrl.includes('youtu.be'))
-  const ytId = isYouTube ? videoPlayUrl.match(/(?:v=|youtu\.be\/)([\w-]+)/)?.[1] : null
+  const ytId = videoPlayUrl ? extractYouTubeId(videoPlayUrl) : null
+  const isYouTube = !!ytId
+  const isDirectVideo = videoPlayUrl ? isPlayableVideoUrl(videoPlayUrl) : false
 
   const renderToast = () => {
     if (!toast) return null
@@ -192,9 +244,7 @@ export default function VideoAI() {
           const isActive = Math.abs(currentTime - m.time) < 3
           return (
             <button key={i} onClick={() => seekTo(m.time)}
-              className={`absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full transition-all duration-200 hover:scale-150 hover:z-10 ${
-                isActive ? 'ring-2 ring-white/50 scale-125' : ''
-              }`}
+              className={`absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full transition-all duration-200 hover:scale-150 hover:z-10 ${isActive ? 'ring-2 ring-white/50 scale-125' : ''}`}
               style={{ left: `${left}%`, backgroundColor: m.color }}
               title={`${formatTime(m.time)} - ${m.label}`} />
           )
@@ -202,6 +252,64 @@ export default function VideoAI() {
         <div className="absolute top-full left-0 right-0 flex justify-between text-[10px] text-gray-600 mt-0.5">
           <span>0:00</span><span>{formatTime(dur)}</span>
         </div>
+      </div>
+    )
+  }
+
+  const renderVideoSection = () => {
+    if (!videoPlayUrl) return null
+
+    if (isYouTube) {
+      return (
+        <div className="aspect-video bg-black rounded-2xl overflow-hidden border border-white/[0.07] shadow-2xl">
+          <iframe
+            src={`https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&rel=0`}
+            className="w-full h-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+      )
+    }
+
+    return (
+      <div className="bg-black rounded-2xl overflow-hidden border border-white/[0.07] shadow-2xl relative group">
+        {!videoReady && !videoError && !thumbDataUrl && (
+          <div className="aspect-video bg-gray-900 animate-pulse flex flex-col items-center justify-center gap-3">
+            <div className="w-12 h-12 rounded-full border-2 border-purple-500/30 border-t-purple-400 animate-spin" />
+            <span className="text-xs text-gray-500">Loading video...</span>
+          </div>
+        )}
+        {!videoReady && thumbDataUrl && !videoError && (
+          <div className="relative aspect-video cursor-pointer" onClick={() => { playerRef.current?.play().catch(() => setVideoError('Playback failed')) }}>
+            <img src={thumbDataUrl} alt="Video thumbnail" className="w-full h-full object-cover" />
+            <div className="absolute inset-0 flex items-center justify-center bg-black/40 hover:bg-black/20 transition-colors">
+              <div className="w-16 h-16 rounded-full bg-purple-600/90 flex items-center justify-center hover:bg-purple-600 hover:scale-105 transition-all shadow-lg">
+                <svg className="w-6 h-6 text-white ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+              </div>
+            </div>
+          </div>
+        )}
+        <video
+          ref={playerRef}
+          className={`w-full aspect-video bg-black ${videoReady ? '' : 'hidden'}`}
+          controls
+          preload="auto"
+          playsInline
+          crossOrigin="anonymous"
+          onCanPlay={() => { setVideoReady(true); setVideoError(null) }}
+          onError={() => { setVideoError('Video could not be loaded. The URL may not be a direct video file.'); setVideoReady(false) }}
+          onTimeUpdate={e => setCurrentTime((e.target as HTMLVideoElement).currentTime)}
+          onLoadedMetadata={() => captureThumbnail(videoPlayUrl)}
+        />
+        {videoError && (
+          <div className="aspect-video bg-gray-900 flex flex-col items-center justify-center gap-3 p-8">
+            <span className="text-3xl">&#9888;</span>
+            <p className="text-red-300 text-sm text-center">{videoError}</p>
+            <p className="text-gray-500 text-xs text-center max-w-md break-all">{videoPlayUrl}</p>
+            <p className="text-gray-600 text-xs mt-2">For YouTube links use a YouTube URL. For direct video use an MP4/webm URL.</p>
+          </div>
+        )}
       </div>
     )
   }
@@ -246,12 +354,25 @@ export default function VideoAI() {
             {inputMode === 'url' ? (
               <div className="space-y-4">
                 <div className="rounded-xl p-4 bg-white/[0.02] border border-white/[0.07]">
-                  <label className="block text-sm text-gray-400 mb-2">YouTube, Vimeo, direct MP4, or any video URL</label>
-                  <input value={videoUrl} onChange={e => { setVideoUrl(e.target.value); if (isValidUrl(e.target.value)) setVideoPlayUrl(e.target.value) }}
+                  <label className="block text-sm text-gray-400 mb-2">YouTube, direct MP4, Google Drive, or any video URL</label>
+                  <input value={videoUrl} onChange={e => setVideoUrl(e.target.value)}
                     placeholder="https://www.youtube.com/watch?v=..."
                     className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-500 outline-none focus:border-purple-500/50 transition-colors" />
                 </div>
-                <p className="text-xs text-gray-500 text-center">Supports YouTube, Vimeo, and direct video links</p>
+                {videoUrl && isValidUrl(videoUrl) && (
+                  <div className="flex items-center gap-2 text-xs">
+                    {extractYouTubeId(videoUrl) ? (
+                      <span className="text-green-400">&#9679; YouTube URL detected</span>
+                    ) : videoUrl.includes('drive.google.com') ? (
+                      <span className="text-yellow-400">&#9679; Google Drive link — will convert to direct download</span>
+                    ) : isPlayableVideoUrl(videoUrl) ? (
+                      <span className="text-green-400">&#9679; Direct video URL</span>
+                    ) : (
+                      <span className="text-yellow-400">&#9679; URL may not be a direct video — try a YouTube or MP4 link</span>
+                    )}
+                  </div>
+                )}
+                <p className="text-xs text-gray-500 text-center">Supports YouTube, Google Drive, Dropbox, and direct MP4/webm links</p>
               </div>
             ) : (
               <div>{renderDrop()}</div>
@@ -290,35 +411,7 @@ export default function VideoAI() {
           <div className="max-w-7xl mx-auto">
             <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
               <div className="xl:col-span-3 space-y-4">
-                {videoPlayUrl && !isYouTube && (
-                  <div className="bg-black rounded-2xl overflow-hidden border border-white/[0.07] shadow-2xl relative group">
-                    {!videoReady && !thumbDataUrl && (
-                      <div className="aspect-video bg-gray-900 animate-pulse flex items-center justify-center">
-                        <div className="w-12 h-12 rounded-full border-2 border-purple-500/30 border-t-purple-400 animate-spin" />
-                      </div>
-                    )}
-                    {!videoReady && thumbDataUrl && (
-                      <div className="relative aspect-video cursor-pointer" onClick={() => playerRef.current?.play()}>
-                        <img src={thumbDataUrl} alt="Video thumbnail" className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/20 transition-colors">
-                          <div className="w-16 h-16 rounded-full bg-purple-600/80 flex items-center justify-center hover:bg-purple-600 transition-colors">
-                            <svg className="w-6 h-6 text-white ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    <video ref={playerRef} src={videoPlayUrl} controls={videoReady}
-                      className={`w-full aspect-video bg-black ${videoReady ? '' : 'hidden'}`}
-                      onCanPlay={() => setVideoReady(true)}
-                      onTimeUpdate={e => setCurrentTime((e.target as HTMLVideoElement).currentTime)} />
-                  </div>
-                )}
-                {isYouTube && (
-                  <div className="aspect-video bg-black rounded-2xl overflow-hidden border border-white/[0.07] shadow-2xl">
-                    <iframe src={`https://www.youtube-nocookie.com/embed/${ytId}?enablejsapi=1`}
-                      className="w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
-                  </div>
-                )}
+                {renderVideoSection()}
 
                 {timelineMarkers.length > 0 && (
                   <div className="bg-white/[0.04] backdrop-blur rounded-xl border border-white/[0.07] p-4">
@@ -404,9 +497,7 @@ export default function VideoAI() {
                             let txt = t.text
                             if (hl && searchTerm) {
                               const idx = txt.toLowerCase().indexOf(searchTerm)
-                              if (idx >= 0) {
-                                txt = txt.slice(0, idx) + '\uFFFF' + txt.slice(idx, idx + searchTerm.length) + '\uFFFF' + txt.slice(idx + searchTerm.length)
-                              }
+                              if (idx >= 0) txt = txt.slice(0, idx) + '\uFFFF' + txt.slice(idx, idx + searchTerm.length) + '\uFFFF' + txt.slice(idx + searchTerm.length)
                             }
                             const parts = txt.split('\uFFFF')
                             return (
@@ -414,7 +505,7 @@ export default function VideoAI() {
                                 className={`w-full flex gap-3 p-2 rounded-lg text-left transition-colors ${hl ? 'bg-purple-500/10 border border-purple-500/20' : 'hover:bg-white/[0.03] border border-transparent'}`}>
                                 <span className="text-purple-400 font-mono text-xs whitespace-nowrap mt-0.5 shrink-0 w-12 text-right">{formatTime(t.time)}</span>
                                 <span className={`text-[11px] mt-0.5 shrink-0 w-16 font-medium ${t.speaker === 'Host' ? 'text-blue-400' : t.speaker === 'Expert' ? 'text-emerald-400' : 'text-gray-400'}`}>{t.speaker}</span>
-                                <span className="text-sm text-gray-300">{parts.length > 1 ? parts.map((p: string, j: number) => j % 2 === 1 ? <mark key={j} className="bg-purple-500/30 text-purple-200 rounded px-0.5">{p}</mark> : p) : txt}</span>
+                                <span className="text-sm text-gray-300">{parts.length > 1 ? parts.map((p: string, j: number) => j % 2 === 1 ? <mark key={j} className="bg-purple-500/30 text-purple-200 rounded px-0.5">{p}</mark> : <span key={j}>{p}</span>) : txt}</span>
                               </button>
                             )
                           })}
@@ -426,7 +517,7 @@ export default function VideoAI() {
                         <div className="flex gap-3">
                           <input value={question} onChange={e => setQuestion(e.target.value)}
                             onKeyDown={e => e.key === 'Enter' && askQuestion()}
-                            placeholder="Ask anything about the video... (e.g. 'How do attention mechanisms work?')"
+                            placeholder="Ask anything about the video..."
                             className="flex-1 px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-500 outline-none focus:border-purple-500/50 transition-colors" />
                           <button onClick={askQuestion} disabled={!question.trim()}
                             className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 rounded-xl font-semibold disabled:opacity-40 transition-all">Ask</button>
@@ -441,13 +532,13 @@ export default function VideoAI() {
                         )}
                         {qaSources.length > 0 && (
                           <div className="space-y-2">
-                            <p className="text-[11px] text-gray-500 font-medium uppercase tracking-widest">Referenced Sources</p>
+                            <p className="text-[11px] text-gray-500 font-medium uppercase tracking-widest">Sources</p>
                             {qaSources.map((s: any, i: number) => (
                               <button key={i} onClick={() => seekTo(s.time)}
                                 className="w-full flex items-start gap-3 p-2.5 bg-white/[0.02] rounded-lg border border-white/[0.05] text-left hover:bg-white/[0.04] transition-colors">
                                 <span className="text-purple-400 font-mono text-xs whitespace-nowrap mt-0.5 shrink-0">[{formatTime(s.time)}]</span>
                                 <span className="text-gray-400 text-sm flex-1">{s.text}</span>
-                                {s.relevance && <span className="text-[11px] text-gray-500 shrink-0 mt-0.5">{(s.relevance * 100).toFixed(0)}% relevance</span>}
+                                {s.relevance && <span className="text-[11px] text-gray-500 shrink-0 mt-0.5">{(s.relevance * 100).toFixed(0)}% match</span>}
                               </button>
                             ))}
                           </div>
