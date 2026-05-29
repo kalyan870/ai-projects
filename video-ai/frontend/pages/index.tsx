@@ -240,7 +240,7 @@ export default function VideoAI() {
             </div>
           </div>
         )}
-        <video ref={playerRef} className={`w-full aspect-video bg-black ${videoReady ? '' : 'hidden'}`}
+        <video ref={playerRef} src={videoPlayUrl || ''} className={`w-full aspect-video bg-black ${videoReady ? '' : 'hidden'}`}
           controls preload="auto" playsInline
           onCanPlay={() => { setVideoReady(true); setVideoError(null) }}
           onError={() => setVideoError('Video could not be loaded')}
