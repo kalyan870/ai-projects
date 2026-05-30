@@ -27,7 +27,6 @@ A curated collection of advanced AI engineering projects focused on autonomous a
 | Voice Assistant | [Watch Demo](./voice_assistant_demo.mp4) |
 
 ---
-
 # 1️⃣ Browser Agent
 
 An AI-powered autonomous browser agent capable of navigating websites, extracting information, filling forms, performing automation tasks, and executing multi-step workflows.
@@ -36,7 +35,7 @@ An AI-powered autonomous browser agent capable of navigating websites, extractin
 
 ## 🖼️ Architecture Preview
 
-![Browser Agent Architecture](./architecture/browser-agent-system-flow.png)
+![Browser Agent Architecture](./browser-agent-system-flow.png)
 
 ---
 
@@ -46,55 +45,113 @@ An AI-powered autonomous browser agent capable of navigating websites, extractin
 
 ---
 
+## 🚀 Live Demo
+
+🌐 Live App:
+https://browser-agent-khaki.vercel.app/
+
+---
+
 ## ✨ Features
 
-- Autonomous web browsing
-- Multi-step task execution
-- Browser automation using Playwright
-- AI planning and reasoning
-- Real-time streaming responses
-- Memory-enabled workflows
-- Screenshot understanding
-- Structured data extraction
+* Autonomous web browsing
+* Multi-step task execution
+* Browser automation using Playwright
+* AI planning and reasoning
+* Real-time streaming responses
+* Memory-enabled workflows
+* Screenshot understanding
+* Structured data extraction
+* Session-aware execution
+* Real-time action streaming
+* Dynamic page interaction
+* AI-powered workflow automation
 
 ---
 
 ## 🛠️ Tech Stack
 
 ### Frontend
-- Next.js
-- React
-- Tailwind CSS
+
+* Next.js
+* React
+* Tailwind CSS
 
 ### Backend
-- FastAPI
-- Python
 
-### AI/LLM
-- OpenAI
-- Claude
-- Ollama
+* FastAPI
+* Python
+
+### AI / LLM
+
+* OpenAI
+* Claude
+* Ollama
 
 ### Browser Automation
-- Playwright
-- Browser-use
 
-### Memory
-- mem0
-- Qdrant
-- ChromaDB
+* Playwright
+* Browser-use
+
+### Memory & Vector DB
+
+* mem0
+* Qdrant
+* ChromaDB
 
 ---
 
+## 📂 Core Capabilities
+
+* Web navigation automation
+* Intelligent form filling
+* Autonomous browser actions
+* Data extraction & scraping
+* Workflow orchestration
+* Context-aware task execution
+* Real-time browser monitoring
+* Streaming AI responses
+
+---
+
+## 📸 System Flow
+
+The architecture includes:
+
+1. User task input
+2. Next.js frontend interface
+3. FastAPI orchestration backend
+4. Browser automation engine
+5. Page snapshot & extraction layer
+6. AI planner & reasoning engine
+7. Action execution loop
+8. Final response generation
+
+---
+
+## ⚡ Use Cases
+
+* Flight & hotel booking automation
+* Form filling bots
+* AI web assistants
+* Data scraping agents
+* QA & testing automation
+* Research assistants
+* Browser workflow automation
+* Productivity copilots
+
+---
+
+
 # 2️⃣ Codebase Analyst
 
-AI-powered repository analysis platform that understands large codebases, explains architecture, analyzes dependencies, and answers engineering questions.
+AI-powered repository analysis platform that understands large-scale codebases, explains software architecture, analyzes dependencies, performs semantic search, and answers engineering questions using LLM-powered reasoning.
 
 ---
 
 ## 🖼️ Architecture Preview
 
-![Codebase Analyst Architecture](./architecture/codebase-analyst-system-flow.png)
+![Codebase Analyst Architecture](./codebase-analyst-system-flow.png)
 
 ---
 
@@ -104,109 +161,251 @@ AI-powered repository analysis platform that understands large codebases, explai
 
 ---
 
+## 🚀 Live Demo
+
+🌐 Live App:
+https://codebase-analyst.vercel.app/
+
+---
+
 ## ✨ Features
 
-- Repository understanding
-- Dependency analysis
-- AI code explanations
-- Large context support
-- Semantic search
-- File relationship graphs
-- Documentation generation
-- Bug analysis
+* Repository understanding
+* AI-powered code explanations
+* Large codebase analysis
+* Semantic code search
+* Dependency graph analysis
+* File relationship mapping
+* Architecture visualization
+* Documentation generation
+* Bug & issue analysis
+* Multi-language repository support
+* Context-aware engineering Q&A
+* Real-time streaming responses
+* Intelligent code chunking
+* Repository indexing pipeline
 
 ---
 
 ## 🛠️ Tech Stack
 
 ### Frontend
-- Next.js
-- Tailwind CSS
+
+* Next.js
+* React
+* Tailwind CSS
 
 ### Backend
-- FastAPI
-- Python
+
+* FastAPI
+* Python
+
+### AI / LLM
+
+* OpenAI
+* Gemini
+* Claude
+* Ollama
 
 ### Vector Database
-- ChromaDB
-- Pinecone
-- Qdrant
 
-### AI
-- OpenAI
-- Gemini
-- Claude
-- Ollama
+* ChromaDB
+* Pinecone
+* Qdrant
 
-### Other Tools
-- Tree-sitter
-- LangChain
-- GitHub API
+### Code Processing
+
+* Tree-sitter
+* LangChain
+* GitHub API
+* GitLab API
+
+### Infrastructure
+
+* Docker
+* Vercel
+* Redis
 
 ---
 
+## 📂 Core Capabilities
+
+* Codebase indexing
+* Repository parsing
+* Semantic embeddings
+* AI architecture explanation
+* Dependency discovery
+* Intelligent repository search
+* File-level relationship analysis
+* Engineering knowledge retrieval
+
+---
+
+## 📸 System Flow
+
+The architecture includes:
+
+1. Repository upload or GitHub URL input
+2. Frontend analysis dashboard
+3. FastAPI orchestration backend
+4. Code parsing & chunking pipeline
+5. Embedding generation & vector indexing
+6. AI reasoning & repository understanding
+7. Real-time streaming insights
+8. Interactive engineering response system
+
+---
+
+## ⚡ Use Cases
+
+* Understand unfamiliar repositories
+* Analyze enterprise codebases
+* Generate technical documentation
+* Detect architectural issues
+* Explain complex functions
+* AI engineering copilots
+* Dependency & module analysis
+* Repository onboarding assistants
+
+---
+
+
 # 3️⃣ Multimodal Video QA & Summarizer
 
-Advanced AI system for understanding videos using multimodal AI pipelines combining transcript understanding and visual reasoning.
+Advanced AI-powered video understanding system that combines transcript intelligence, multimodal reasoning, semantic retrieval, and visual scene analysis to generate summaries, answer questions, and extract insights from videos.
 
 ---
 
 ## 🖼️ Architecture Preview
 
-![Video AI Architecture](./architecture/video-qa-system-flow.png)
+![Video AI Architecture](./video-qa-system-flow.png)
 
 ---
 
 ## 🎥 Demo Preview
 
-[▶ Watch Video QA Demo](./video_ai_demo.mp4)
+[▶ Watch Video QA Demo](./multivideo_demo_v2.mp4)
+
+---
+
+## 🚀 Live Demo
+
+🌐 Live App:
+https://multimodal-video-ai.vercel.app/
 
 ---
 
 ## ✨ Features
 
-- Video summarization
-- Semantic video search
-- Timestamp mapping
-- AI Q&A over videos
-- Transcript generation
-- Keyframe extraction
-- Visual scene understanding
-- AI highlights generation
+* AI-powered video summarization
+* Semantic video search
+* Timestamp-based retrieval
+* Multimodal video Q&A
+* Transcript generation
+* Keyframe extraction
+* Visual scene understanding
+* AI highlights generation
+* Frame-level embeddings
+* Speech-to-text processing
+* Context-aware retrieval
+* Intelligent transcript chunking
+* Video metadata extraction
+* Real-time AI reasoning
 
 ---
 
 ## 🛠️ Tech Stack
 
 ### Video Processing
-- FFmpeg
+
+* FFmpeg
 
 ### Speech AI
-- Whisper
+
+* Whisper
+* Faster-Whisper
 
 ### Multimodal AI
-- MVU
-- HunyuanVideo
-- vLLM
+
+* MVU
+* HunyuanVideo
+* vLLM
 
 ### Vector Database
-- LanceDB
+
+* LanceDB
 
 ### Backend
-- Python
-- FastAPI
+
+* Python
+* FastAPI
+
+### AI / Retrieval
+
+* LangChain
+* Embedding Models
+* Semantic Search Pipelines
+
+### Infrastructure
+
+* Docker
+* Vercel
+* GPU Acceleration
 
 ---
 
+## 📂 Core Capabilities
+
+* Video transcript understanding
+* Frame-level semantic indexing
+* AI-powered timestamp retrieval
+* Contextual video question answering
+* Keyframe semantic search
+* Visual + transcript reasoning
+* Video insight extraction
+* Automated highlight generation
+
+---
+
+## 📸 System Flow
+
+The architecture includes:
+
+1. Video upload pipeline
+2. FFmpeg video preprocessing
+3. Speech-to-text transcript generation
+4. Visual frame extraction
+5. Multimodal embedding generation
+6. Vector database indexing
+7. AI retrieval & reasoning engine
+8. Summary & Q/A response generation
+9. Interactive dashboard visualization
+
+---
+
+## ⚡ Use Cases
+
+* AI video assistants
+* Lecture summarization
+* Podcast understanding
+* Meeting intelligence systems
+* Educational content analysis
+* Video search engines
+* Media archive retrieval
+* Smart surveillance analysis
+
+---
+
+
 # 4️⃣ Alignment Lab AI
 
-Framework for evaluating LLM alignment, bias detection, adversarial robustness, and safety benchmarking.
+AI-powered evaluation and alignment platform designed to analyze, benchmark, and improve Large Language Models using bias detection, safety evaluation, adversarial testing, and alignment scoring pipelines.
 
 ---
 
 ## 🖼️ Architecture Preview
 
-![Alignment Lab Architecture](./architecture/alignment-lab-system-flow.png)
+![Alignment Lab Architecture](./alignment-lab-system-flow.png)
 
 ---
 
@@ -216,51 +415,127 @@ Framework for evaluating LLM alignment, bias detection, adversarial robustness, 
 
 ---
 
+## 🚀 Live Demo
+
+🌐 Live App:
+https://alignment-lab-ai.vercel.app/
+
+---
+
 ## ✨ Features
 
-- Bias detection
-- Toxicity analysis
-- Adversarial testing
-- Jailbreak testing
-- LLM comparison
-- Alignment scoring
-- Evaluation dashboards
-- Risk heatmaps
+* Multi-model evaluation
+* Bias & toxicity detection
+* Alignment scoring engine
+* Adversarial prompt testing
+* Jailbreak detection
+* Safety benchmarking
+* Model comparison dashboards
+* AI risk analysis
+* Evaluation trace logging
+* Prompt injection testing
+* Fairness & robustness analysis
+* Custom evaluation workflows
+* Automated scoring pipelines
+* Detailed alignment reporting
 
 ---
 
 ## 🛠️ Tech Stack
 
 ### Frontend
-- Next.js
-- React
+
+* Next.js
+* React
+* Tailwind CSS
 
 ### Backend
-- FastAPI
-- Python
 
-### Frameworks
-- TruLens
-- DeepEval
-- LangSmith
-- Ragas
+* FastAPI
+* Python
 
-### Databases
-- PostgreSQL
-- ChromaDB
-- Pinecone
+### AI / LLM Providers
+
+* OpenAI
+* Anthropic Claude
+* Gemini
+* Ollama
+* Groq
+
+### Evaluation Frameworks
+
+* TruLens
+* DeepEval
+* LangSmith
+* Ragas
+
+### Vector Database
+
+* Pinecone
+* ChromaDB
+* Qdrant
+
+### Infrastructure
+
+* PostgreSQL
+* Redis
+* Docker
+* Celery
 
 ---
 
+## 📂 Core Capabilities
+
+* LLM alignment evaluation
+* Bias detection pipelines
+* Safety benchmarking
+* Prompt vulnerability testing
+* AI risk monitoring
+* Multi-model response comparison
+* Evaluation history tracking
+* Alignment score generation
+
+---
+
+## 📸 System Flow
+
+The architecture includes:
+
+1. User prompt or dataset upload
+2. Input validation & preprocessing
+3. Multi-model inference pipeline
+4. Bias & risk detection engine
+5. Alignment scoring system
+6. Adversarial testing workflows
+7. Results aggregation & analytics
+8. Dashboard visualization & reporting
+9. Continuous feedback improvement loop
+
+---
+
+## ⚡ Use Cases
+
+* AI safety evaluation
+* LLM benchmarking platforms
+* Responsible AI systems
+* Prompt injection testing
+* Alignment research labs
+* Enterprise AI governance
+* Risk & compliance monitoring
+* AI model comparison dashboards
+
+---
+
+
 # 5️⃣ Local AI Voice Assistant
 
-Offline-first AI assistant with speech recognition, memory, voice responses, and local LLM execution.
+Offline-first AI voice assistant powered by local LLMs, speech recognition, memory systems, and real-time voice interaction pipelines designed for privacy-focused intelligent conversations.
 
 ---
 
 ## 🖼️ Architecture Preview
 
-![Voice Assistant Architecture](./architecture/voice-assistant-system-flow.png)
+![Voice Assistant Architecture](./voice-assistant-system-flow.png)
 
 ---
 
@@ -270,43 +545,113 @@ Offline-first AI assistant with speech recognition, memory, voice responses, and
 
 ---
 
+## 🚀 Live Demo
+
+🌐 Live App:
+https://local-voice-assistant.vercel.app/
+
+---
+
 ## ✨ Features
 
-- Offline AI assistant
-- Voice-to-text
-- Text-to-speech
-- Local LLM support
-- Memory-enabled conversations
-- Streaming responses
-- Privacy focused
-- Fast local inference
+* Offline AI voice assistant
+* Real-time voice interaction
+* Speech-to-text transcription
+* Text-to-speech generation
+* Local LLM execution
+* Memory-enabled conversations
+* Streaming AI responses
+* Privacy-focused architecture
+* Fast local inference
+* Wake-word activation
+* Context-aware conversations
+* Persistent memory system
+* Multi-model local support
+* Low-latency voice pipeline
 
 ---
 
 ## 🛠️ Tech Stack
 
 ### Frontend
-- Next.js
-- React
+
+* Next.js
+* React
+* Tailwind CSS
 
 ### Backend
-- FastAPI
-- Python
 
-### Local AI
-- Ollama
-- Llama 3.2
-- Phi-3
-- Mistral
+* FastAPI
+* Python
+
+### Local AI / LLM
+
+* Ollama
+* Llama 3.2
+* Phi-3
+* Mistral
+* TinyLlama
 
 ### Speech Stack
-- Whisper.cpp
-- Piper TTS
-- Coqui TTS
 
-### Memory
-- mem0
-- SQLite
+* Whisper.cpp
+* Faster-Whisper
+* Piper TTS
+* Coqui TTS
+
+### Memory & Storage
+
+* mem0
+* SQLite
+* ChromaDB
+
+### Infrastructure
+
+* Docker
+* WebSockets
+* GPU Acceleration
+
+---
+
+## 📂 Core Capabilities
+
+* Offline AI conversations
+* Voice-enabled interactions
+* Real-time speech processing
+* Persistent AI memory
+* Local model orchestration
+* Wake-word detection
+* Streaming text generation
+* Multi-turn contextual reasoning
+
+---
+
+## 📸 System Flow
+
+The architecture includes:
+
+1. Voice input capture
+2. Speech-to-text transcription
+3. Local LLM inference pipeline
+4. Memory retrieval & context injection
+5. AI reasoning & response generation
+6. Text-to-speech synthesis
+7. Real-time streaming output
+8. Persistent conversation storage
+9. Interactive voice response loop
+
+---
+
+## ⚡ Use Cases
+
+* Personal AI assistants
+* Offline productivity copilots
+* Smart desktop companions
+* AI accessibility systems
+* Voice-controlled automation
+* Educational AI tutors
+* Local enterprise AI assistants
+* Privacy-focused AI workflows
 
 ---
 
