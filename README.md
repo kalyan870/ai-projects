@@ -310,7 +310,7 @@ Offline-first AI assistant with speech recognition, memory, voice responses, and
 
 ---
 
-# 📂 Recommended Repository Structure
+# 
 
 ```bash
 ai-projects/
