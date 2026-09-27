@@ -22,7 +22,7 @@ A curated collection of advanced AI engineering projects focused on autonomous a
 |---|---|
 | Browser Agent | [Watch Demo](./browser_agent_demo.mp4) |
 | Codebase Analyst | [Watch Demo](./codebase_analyst_demo.mp4) |
-| Video QA & Summarizer | [Watch Demo](./video_ai_demo.mp4) |
+| Video QA & Summarizer | [Watch Demo](./multivideo_demo_v2.mp4) |
 | Alignment Lab AI | [Watch Demo](./alignment_lab_demo.mp4) |
 | Voice Assistant | [Watch Demo](./voice_assistant_demo.mp4) |
 
@@ -35,7 +35,7 @@ An AI-powered autonomous browser agent capable of navigating websites, extractin
 
 ## 🖼️ Architecture Preview
 
-![Browser Agent Architecture](./browser-agent-system-flow.png)
+![Browser Agent Architecture](./browser-agent-system-flow.png.png)
 
 ---
 
@@ -151,7 +151,7 @@ AI-powered repository analysis platform that understands large-scale codebases, 
 
 ## 🖼️ Architecture Preview
 
-![Codebase Analyst Architecture](./codebase-analyst-system-flow.png)
+![Codebase Analyst Architecture](./codebase-analyst-system-flow.png.png)
 
 ---
 
@@ -278,7 +278,7 @@ Advanced AI-powered video understanding system that combines transcript intellig
 
 ## 🖼️ Architecture Preview
 
-![Video AI Architecture](./video-qa-system-flow.png)
+![Video AI Architecture](./video-qa-system-flow.png.png)
 
 ---
 
@@ -405,7 +405,7 @@ AI-powered evaluation and alignment platform designed to analyze, benchmark, and
 
 ## 🖼️ Architecture Preview
 
-![Alignment Lab Architecture](./alignment-lab-system-flow.png)
+![Alignment Lab Architecture](./alignment-lab-system-flow.png.png)
 
 ---
 
@@ -535,7 +535,7 @@ Offline-first AI voice assistant powered by local LLMs, speech recognition, memo
 
 ## 🖼️ Architecture Preview
 
-![Voice Assistant Architecture](./voice-assistant-system-flow.png)
+![Voice Assistant Architecture](./voice-assistant-system-flow.png.png)
 
 ---
 
@@ -657,23 +657,18 @@ The architecture includes:
 
 # 
 
-```bash
+```text
 ai-projects/
-│
-├── architecture/
-│   ├── browser-agent-system-flow.png
-│   ├── codebase-analyst-system-flow.png
-│   ├── video-qa-system-flow.png
-│   ├── alignment-lab-system-flow.png
-│   └── voice-assistant-system-flow.png
-│
-├── demos/
-│   ├── browser_agent_demo.mp4
-│   ├── codebase_analyst_demo.mp4
-│   ├── video_ai_demo.mp4
-│   ├── alignment_lab_demo.mp4
-│   └── voice_assistant_demo.mp4
-│
+├── alignment_lab_demo.mp4
+├── browser_agent_demo.mp4
+├── codebase_analyst_demo.mp4
+├── multivideo_demo_v2.mp4
+├── voice_assistant_demo.mp4
+├── browser-agent-system-flow.png.png
+├── codebase-analyst-system-flow.png.png
+├── video-qa-system-flow.png.png
+├── alignment-lab-system-flow.png.png
+├── voice-assistant-system-flow.png.png
 ├── browser-agent/
 ├── codebase-analyst/
 ├── video-ai/
