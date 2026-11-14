@@ -11,6 +11,7 @@ from parser.code_parser import CodeParser
 from embeddings.embedder import CodeEmbedder
 from vector_db.lance_db import LanceVectorDB
 from llm.qa_engine import QAEngine
+from llm.metadata import parse_metadata
 from summaries.repo_summary import RepoSummarizer
 
 load_dotenv()
@@ -19,7 +20,7 @@ app = FastAPI(title="Codebase Analyst API", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[o.strip() for o in os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",") if o.strip()],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -74,10 +75,7 @@ def ask_question(req: QuestionRequest):
         if not results:
             return {"answer": "No relevant code found. Load a repository first."}
         answer = qa.answer(req.question, results)
-        sources = [
-            eval(r.get("metadata", "{}")).get("file", "unknown")
-            for r in results
-        ]
+        sources = [parse_metadata(r.get("metadata", {})).get("file", "unknown") for r in results]
         return {"answer": answer, "sources": sources}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
