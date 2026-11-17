@@ -9,7 +9,10 @@ CLOUDFLARE_ACCOUNT_ID=
 R2_ACCESS_KEY_ID=
 R2_SECRET_ACCESS_KEY=
 R2_BUCKET_NAME=
+CORS_ORIGINS=https://your-frontend-domain.example
 ```
+
+Set `NEXT_PUBLIC_VIDEO_API_BASE` in the frontend deployment to the backend origin, without a trailing slash. When set, local video-file uploads use the R2 flow below; the URL-import demo path remains unchanged.
 
 Create a bucket-scoped R2 token with object read/write access to this bucket only. Add the deployed frontend origin to that bucket's CORS policy with `PUT` allowed and `Content-Type` allowed. Keep the bucket private; the API returns no public object URL.
 

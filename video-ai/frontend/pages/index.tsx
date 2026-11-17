@@ -47,6 +47,7 @@ function isPlayableUrl(url: string): boolean {
 }
 
 export default function VideoAI() {
+  const videoApiBase = process.env.NEXT_PUBLIC_VIDEO_API_BASE?.replace(/\/+$/, '')
   const [video, setVideo] = useState<File | null>(null)
   const [videoUrl, setVideoUrl] = useState('')
   const [inputMode, setInputMode] = useState<'url' | 'file'>('url')
@@ -98,6 +99,45 @@ export default function VideoAI() {
   const submitVideo = async () => {
     setLoading(true); setProgressStep(0); setThumbDataUrl(null); setVideoReady(false); setVideoError(null)
     try {
+      if (inputMode === 'file' && video && videoApiBase) {
+        const contentType = video.type || ({
+          mp4: 'video/mp4', mov: 'video/quicktime', mkv: 'video/x-matroska',
+          avi: 'video/x-msvideo', webm: 'video/webm',
+        } as Record<string, string>)[video.name.split('.').pop()?.toLowerCase() || ''] || 'application/octet-stream'
+        const grant = await axios.post(`${videoApiBase}/api/upload-url`, {
+          filename: video.name, contentType, size: video.size,
+        })
+        await axios.put(grant.data.upload_url, video, { headers: grant.data.headers })
+        const vidId = grant.data.video_id as string
+        setVideoId(vidId)
+        const playUrl = URL.createObjectURL(video)
+        setVideoPlayUrl(playUrl)
+        captureThumbnail(playUrl)
+        setProcessing(true)
+        const proc = await axios.post(`${videoApiBase}/api/process/${encodeURIComponent(vidId)}`, null, {
+          params: { object_key: grant.data.object_key },
+        })
+        const result = proc.data
+        setData({
+          video_id: vidId,
+          duration: result.duration,
+          chapters: result.chapters || [],
+          key_moments: result.key_moments || [],
+          transcript: (result.segments || []).map((segment: any) => ({
+            time: segment.start, start: segment.start, end: segment.end,
+            speaker: 'Speaker', text: segment.text,
+          })),
+          summary: result.summary || '',
+          tech_insights: {
+            model: 'Whisper', embedding_model: 'Sentence Transformers',
+            vector_db: 'LanceDB', language: 'en', chunks: result.segments?.length || 0,
+            tokens_processed: 0, avg_chunk_size: 'n/a',
+          },
+        })
+        setLoading(false); setProcessing(false)
+        return
+      }
+
       let submitUrl: string
       let playUrl: string
       let vidId: string
