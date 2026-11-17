@@ -1,4 +1,5 @@
 import os
+from llm.metadata import parse_metadata
 from typing import List, Dict, Any
 from openai import OpenAI
 
@@ -37,7 +38,7 @@ class QAEngine:
     def _format_context(self, chunks: List[Dict[str, Any]]) -> str:
         parts = []
         for c in chunks:
-            meta = eval(c.get("metadata", "{}")) if isinstance(c.get("metadata"), str) else c.get("metadata", {})
+            meta = parse_metadata(c.get("metadata", {}))
             file = meta.get("file", "unknown")
             name = meta.get("name", "unknown")
             text = c.get("text", "")[:500]

@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 app = FastAPI(title="Video AI API", version="1.0.0")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(CORSMiddleware, allow_origins=[o.strip() for o in os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",") if o.strip()], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 STORE_ID = "wiPO3SuGPCYYU9fI"
 
@@ -70,7 +70,7 @@ CHAPTER_TITLES = [
     "Community Contributions and Ecosystem",
     "Roadmap and What's Coming Next",
     "Q&A with the Engineering Team",
-}
+]
 
 CHAPTER_DESCRIPTIONS = [
     "Opening remarks, agenda overview, and context setting for the talk",
