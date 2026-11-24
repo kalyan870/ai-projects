@@ -1,4 +1,5 @@
 import os
+from fractions import Fraction
 import subprocess
 from typing import List, Dict, Any
 import ffmpeg
@@ -47,7 +48,7 @@ class VideoProcessor:
             "width": int(stream['width']),
             "height": int(stream['height']),
             "codec": stream['codec_name'],
-            "fps": eval(stream.get('r_frame_rate', '0/1')),
+            "fps": float(Fraction(stream.get('r_frame_rate', '0/1'))),
             "size": os.path.getsize(video_path)
         }
 

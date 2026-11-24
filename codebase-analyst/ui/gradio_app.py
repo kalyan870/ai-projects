@@ -8,6 +8,7 @@ from parser.code_parser import CodeParser
 from embeddings.embedder import CodeEmbedder
 from vector_db.lance_db import LanceVectorDB
 from llm.qa_engine import QAEngine
+from llm.metadata import parse_metadata
 from summaries.repo_summary import RepoSummarizer
 
 class CodebaseAnalystUI:
@@ -64,7 +65,7 @@ class CodebaseAnalystUI:
             answer = self.qa.answer(question, results)
 
             context_used = "\n\n".join([
-                eval(r.get("metadata", "{}")).get("file", "unknown")
+                parse_metadata(r.get("metadata", {})).get("file", "unknown")
                 for r in results
             ])
             return f"{answer}\n\n---\nSources:\n{context_used}"

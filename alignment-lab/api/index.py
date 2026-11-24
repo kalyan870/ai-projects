@@ -1,4 +1,5 @@
 import os
+import os
 import json
 import random
 import re
@@ -11,7 +12,7 @@ from pydantic import BaseModel
 from typing import Optional, List
 
 app = FastAPI(title="Alignment Lab API", version="2.0.0")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(CORSMiddleware, allow_origins=[o.strip() for o in os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",") if o.strip()], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 FIREWORKS_API_KEY = os.environ.get("FIREWORKS_API_KEY", "")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")

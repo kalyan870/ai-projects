@@ -1,5 +1,9 @@
 # AI Projects Collection
 
+## Backend CORS configuration
+
+Backend services default to local frontend origins for development. Set `CORS_ORIGINS` in each deployment to a comma-separated allowlist of that service's exact frontend origins (for example, `https://your-frontend.example,https://preview.example`) before connecting a deployed UI. Do not use `*` with credentialed requests.
+
 A curated collection of advanced AI engineering projects focused on autonomous agents, multimodal AI, code intelligence, alignment evaluation, and local AI systems.
 
 ---

@@ -1,4 +1,4 @@
-import os, sys, json, uuid, hmac, hashlib, base64, time
+import os, sys, json, uuid
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from fastapi import FastAPI, UploadFile, File, HTTPException, Query
@@ -12,11 +12,12 @@ from backend.video_processor import VideoProcessor
 from backend.transcriber import Transcriber
 from backend.summarizer import VideoSummarizer
 from backend.qa_engine import VideoQA
+from backend.storage import InvalidUpload, R2Storage, StorageNotConfigured, validate_object_key, validate_upload
 
 load_dotenv()
 
 app = FastAPI(title="Video AI API", version="1.0.0")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(CORSMiddleware, allow_origins=[o.strip() for o in os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",") if o.strip()], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 router = APIRouter(prefix="/api")
 
@@ -24,8 +25,6 @@ processor = VideoProcessor()
 transcriber = Transcriber()
 summarizer = VideoSummarizer()
 qa_engine = VideoQA()
-
-STORE_ID = os.environ.get("BLOB_STORE_ID", "wiPO3SuGPCYYU9fI")
 
 class QuestionRequest(BaseModel):
     video_id: str
@@ -35,6 +34,7 @@ class QuestionRequest(BaseModel):
 class UploadUrlRequest(BaseModel):
     filename: str = "video.mp4"
     contentType: str = "video/mp4"
+    size: int
 
 class UrlUploadRequest(BaseModel):
     url: str = ""
@@ -48,16 +48,22 @@ def health():
 
 @router.post("/upload-url")
 def get_upload_url(req: UploadUrlRequest):
-    rw_token = os.environ.get("BLOB_READ_WRITE_TOKEN", "")
-    ext = os.path.splitext(req.filename)[1] or ".mp4"
-    pathname = f"videos/{uuid.uuid4()}{ext}"
-    valid_until = int(time.time() * 1000) + 600000
-    payload = json.dumps({"pathname": pathname, "access": "public", "validUntil": valid_until}, separators=(",", ":"))
-    payload_b64 = base64.b64encode(payload.encode()).decode()
-    signature = hmac.new(rw_token.encode(), payload_b64.encode(), hashlib.sha256).hexdigest()
-    combined = (signature + "." + payload_b64).encode()
-    client_token = f"vercel_blob_client_{STORE_ID}_{base64.b64encode(combined).decode()}"
-    return {"clientToken": client_token, "pathname": pathname}
+    try:
+        video_id, object_key, content_type = validate_upload(req.filename, req.contentType, req.size)
+        storage = R2Storage.from_env()
+        upload_url = storage.presign_upload(object_key, content_type)
+    except InvalidUpload as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except StorageNotConfigured as exc:
+        raise HTTPException(status_code=503, detail="Private R2 upload storage is not configured.") from exc
+    return {
+        "video_id": video_id,
+        "object_key": object_key,
+        "upload_url": upload_url,
+        "method": "PUT",
+        "headers": {"Content-Type": content_type},
+        "expires_in": 300,
+    }
 
 @router.post("/upload")
 async def upload_video(file: UploadFile = File(...)):
@@ -73,11 +79,24 @@ async def upload_video(file: UploadFile = File(...)):
     return {"video_id": video_id, "filename": file.filename, "info": info}
 
 @router.post("/process/{video_id}")
-def process_video(video_id: str):
+def process_video(video_id: str, object_key: str | None = Query(default=None)):
     files = [f for f in os.listdir(processor.upload_dir) if f.startswith(video_id)]
-    if not files:
-        raise HTTPException(status_code=404, detail="Video not found")
-    video_path = os.path.join(processor.upload_dir, files[0])
+    if files:
+        video_path = os.path.join(processor.upload_dir, files[0])
+    elif object_key:
+        try:
+            validate_object_key(video_id, object_key)
+            storage = R2Storage.from_env()
+            video_path = os.path.join(processor.upload_dir, f"{video_id}{os.path.splitext(object_key)[1]}")
+            storage.download(object_key, video_path)
+        except InvalidUpload as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except StorageNotConfigured as exc:
+            raise HTTPException(status_code=503, detail="Private R2 upload storage is not configured.") from exc
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail="Could not retrieve the uploaded video from private storage.") from exc
+    else:
+        raise HTTPException(status_code=404, detail="Video not found. Provide the matching R2 object_key for a presigned upload.")
     audio_path = processor.extract_audio(video_path)
     frames = processor.extract_frames(video_path)
     segments = transcriber.get_timestamped_segments(audio_path)
