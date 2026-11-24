@@ -99,7 +99,10 @@ export default function VideoAI() {
   const submitVideo = async () => {
     setLoading(true); setProgressStep(0); setThumbDataUrl(null); setVideoReady(false); setVideoError(null)
     try {
-      if (inputMode === 'file' && video && videoApiBase) {
+      if (inputMode === 'file' && video && !videoApiBase) {
+        throw new Error('File uploads need NEXT_PUBLIC_VIDEO_API_BASE configured for the R2 backend.')
+      }
+      if (inputMode === 'file' && video) {
         const contentType = video.type || ({
           mp4: 'video/mp4', mov: 'video/quicktime', mkv: 'video/x-matroska',
           avi: 'video/x-msvideo', webm: 'video/webm',
